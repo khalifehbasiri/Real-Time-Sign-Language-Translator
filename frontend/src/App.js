@@ -50,6 +50,7 @@ function App() {
 
   const confidencePercent = confidence ? Math.round(confidence * 100) : 0;
   const lastUpdatedText = lastUpdated ? lastUpdated.toLocaleTimeString() : "Waiting for input";
+  const livePreviewText = translationText || (currentPrediction !== "-" ? currentPrediction : "");
 
   return (
     <div className="App">
@@ -197,7 +198,7 @@ function App() {
 
                 <textarea
                   className="translation-text"
-                  value={translationText}
+                  value={livePreviewText}
                   readOnly
                   placeholder="Build your translated sentence here..."
                 />

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = "http://127.0.0.1:5000"; // Ensure this matches your backend
+const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:5000";
 
 // Function to send landmarks to the backend
 export const sendLandmarks = async (landmarks) => {
