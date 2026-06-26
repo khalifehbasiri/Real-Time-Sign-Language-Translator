@@ -5,15 +5,19 @@
 ###############################################################
 import json
 import os
+import time
 
 import numpy as np
-import tensorflow as tf
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
 MODEL_PATH = "landmark_model.h5"
 LABEL_MAP_PATH = "label_map.json"
 EXPECTED_KEYPOINTS = 63  # 21 landmarks * (x, y, z)
+model = None
 
 
 def get_allowed_origins():
@@ -65,7 +69,21 @@ def normalize_landmarks(landmarks):
 def load_model_if_present():
     if not os.path.exists(MODEL_PATH):
         return None
+    import tensorflow as tf
+
     return tf.keras.models.load_model(MODEL_PATH, compile=False)
+
+
+def get_model():
+    global model
+
+    if model is None:
+        started_at = time.perf_counter()
+        print("Loading TensorFlow model...", flush=True)
+        model = load_model_if_present()
+        print(f"Model load finished in {time.perf_counter() - started_at:.2f}s", flush=True)
+
+    return model
 
 
 def warmup_model_if_ready(loaded_model):
@@ -78,10 +96,9 @@ def warmup_model_if_ready(loaded_model):
     loaded_model(dummy_input, training=False)
 
 
-model = load_model_if_present()
 label_map = load_label_map(LABEL_MAP_PATH) if os.path.exists(LABEL_MAP_PATH) else {}
 if os.getenv("ENABLE_MODEL_WARMUP", "false").strip().lower() == "true":
-    warmup_model_if_ready(model)
+    warmup_model_if_ready(get_model())
 
 
 @app.route("/predict", methods=["POST"])
@@ -90,7 +107,9 @@ def predict():
     Accepts JSON payload:
       { "keypoints": [x1, y1, z1, ..., x21, y21, z21] }
     """
-    if model is None:
+    loaded_model = get_model()
+
+    if loaded_model is None:
         return jsonify(
             {
                 "error": (
@@ -121,10 +140,12 @@ def predict():
     except (ValueError, TypeError):
         return jsonify({"error": "Keypoints must be numeric values."}), 400
 
-    preds = model(features, training=False).numpy()[0]
+    started_at = time.perf_counter()
+    preds = loaded_model(features, training=False).numpy()[0]
     pred_idx = int(np.argmax(preds))
     confidence = float(preds[pred_idx])
     prediction = label_map.get(pred_idx, str(pred_idx))
+    print(f"/predict inference finished in {time.perf_counter() - started_at:.3f}s", flush=True)
 
     return jsonify({"prediction": prediction, "confidence": confidence})
 
