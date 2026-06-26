@@ -44,6 +44,7 @@ flowchart LR
 │  ├─ extract_landmarks.py
 │  ├─ train_landmark_model.py
 │  ├─ requirements.txt
+│  ├─ requirements-prod.txt
 │  └─ Dockerfile
 └─ README.md
 ```
@@ -71,6 +72,17 @@ npm start
 ```
 
 Frontend runs on `http://localhost:3000`.
+
+## Render Deployment (Backend)
+
+To reduce cold-start overhead on Render free instances, use the slim runtime dependency file:
+
+- **Root Directory:** `sign-language-alphabet`
+- **Build Command:** `pip install -r requirements-prod.txt`
+- **Start Command:** `gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --threads 2`
+- **Health Check Path:** `/`
+
+Use `requirements.txt` for local training/development and `requirements-prod.txt` for Render runtime.
 
 ## Model Training
 
