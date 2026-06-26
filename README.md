@@ -8,14 +8,12 @@ An AI-powered web application that translates ASL hand signs into text in real t
 - Landmark-based TensorFlow model (`63` features per frame: `21` points × `x,y,z`)
 - React frontend with live camera visualization and translation console
 - Flask backend API serving predictions and confidence scores
-- Dockerized backend for deployment to AWS EC2
 
 ## Tech Stack
 
 - **Frontend:** React, Axios, MediaPipe Hands
 - **Backend:** Flask, TensorFlow, NumPy
 - **ML/Data:** MediaPipe Hand Landmarker, scikit-learn
-- **Deployment:** Docker, AWS EC2
 
 ## Architecture
 
@@ -29,13 +27,6 @@ flowchart LR
     F --> G[Prediction + Confidence]
     G --> H[Translation Console UI]
 ```
-
-<!-- ## Model Summary
-
-- Training source: `asl_alphabet_dataset` (`A-Z`, 3000 images/class)
-- Landmark extraction + normalization pipeline in `sign-language-alphabet/extract_landmarks.py`
-- Training script in `sign-language-alphabet/train_landmark_model.py`
-- Latest run achieved approximately **98.3% test accuracy** on extracted landmark data -->
 
 ## Repository Structure
 
@@ -54,7 +45,6 @@ flowchart LR
 │  ├─ train_landmark_model.py
 │  ├─ requirements.txt
 │  └─ Dockerfile
-├─ DEPLOYMENT.md
 └─ README.md
 ```
 
@@ -82,20 +72,10 @@ npm start
 
 Frontend runs on `http://localhost:3000`.
 
-## Train the Landmark Model
+## Model Training
 
-### Extract landmarks from dataset
-
-```bash
-cd sign-language-alphabet
-env\Scripts\python.exe extract_landmarks.py --dataset_dir "..\asl_alphabet_dataset" --output_npz "landmark_dataset.npz" --label_map_path "label_map.json"
-```
-
-### Train model
-
-```bash
-env\Scripts\python.exe train_landmark_model.py --dataset_npz "landmark_dataset.npz" --output_model "landmark_model.h5" --label_map_path "label_map.json"
-```
+Training scripts are included in `sign-language-alphabet/extract_landmarks.py` and
+`sign-language-alphabet/train_landmark_model.py`.
 
 ## API
 
@@ -117,10 +97,6 @@ Response:
   "confidence": 0.98
 }
 ```
-
-## Deployment
-
-Deployment steps are documented in `DEPLOYMENT.md`.
 
 ## Author
 
