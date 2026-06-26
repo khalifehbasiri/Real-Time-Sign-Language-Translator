@@ -47,4 +47,5 @@ asl_alphabet_dataset/
 *.npz
 *.task
 *.h5
+!sign-language-alphabet/landmark_model.h5
 
