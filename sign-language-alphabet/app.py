@@ -11,12 +11,34 @@ import tensorflow as tf
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)
-
 MODEL_PATH = "landmark_model.h5"
 LABEL_MAP_PATH = "label_map.json"
 EXPECTED_KEYPOINTS = 63  # 21 landmarks * (x, y, z)
+
+
+def get_allowed_origins():
+    """
+    Configure explicit CORS origins. Set ALLOWED_ORIGINS as comma-separated URLs
+    in Render for environment-specific control.
+    """
+    configured_origins = os.getenv("ALLOWED_ORIGINS", "")
+    if configured_origins.strip():
+        return [origin.strip() for origin in configured_origins.split(",") if origin.strip()]
+
+    return [
+        "https://real-time-sign-language-translator-woad.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
+
+app = Flask(__name__)
+CORS(
+    app,
+    resources={r"/*": {"origins": get_allowed_origins()}},
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
 
 
 def load_label_map(path):
