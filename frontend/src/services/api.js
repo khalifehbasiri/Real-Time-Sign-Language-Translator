@@ -7,7 +7,7 @@ const API_URL =
     ? "http://127.0.0.1:5000"
     : PRODUCTION_API_FALLBACK);
 
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 70000;
 
 // Function to send landmarks to the backend
 export const sendLandmarks = async (landmarks) => {
@@ -25,7 +25,10 @@ export const sendLandmarks = async (landmarks) => {
   } catch (error) {
     const statusCode = error?.response?.status ?? null;
     const serverErrorMessage = error?.response?.data?.error;
-    const timeoutMessage = error.code === "ECONNABORTED" ? "Request timed out." : null;
+    const timeoutMessage =
+      error.code === "ECONNABORTED"
+        ? "Request timed out while backend was waking up. Please try again."
+        : null;
     const fallbackMessage = error.message || "Failed to reach prediction API.";
     const errorMessage = serverErrorMessage || timeoutMessage || fallbackMessage;
 

@@ -80,7 +80,8 @@ def warmup_model_if_ready(loaded_model):
 
 model = load_model_if_present()
 label_map = load_label_map(LABEL_MAP_PATH) if os.path.exists(LABEL_MAP_PATH) else {}
-warmup_model_if_ready(model)
+if os.getenv("ENABLE_MODEL_WARMUP", "false").strip().lower() == "true":
+    warmup_model_if_ready(model)
 
 
 @app.route("/predict", methods=["POST"])
