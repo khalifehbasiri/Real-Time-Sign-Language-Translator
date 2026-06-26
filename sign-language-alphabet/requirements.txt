@@ -1,0 +1,10 @@
+tensorflow
+keras
+numpy
+pandas
+scikit-learn
+opencv-python
+matplotlib
+flask
+flask-cors
+mediapipe

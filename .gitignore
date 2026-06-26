@@ -1,0 +1,53 @@
+# -----------------------------
+# Secrets / credentials
+# -----------------------------
+*.pem
+*.key
+*.p12
+.env
+.env.*
+
+# -----------------------------
+# Python artifacts
+# -----------------------------
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+env/
+venv/
+.venv/
+**/env/
+**/venv/
+**/.venv/
+
+# -----------------------------
+# Node artifacts
+# -----------------------------
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# -----------------------------
+# Build / cache
+# -----------------------------
+dist/
+build/
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# ML / dataset artifacts
+# -----------------------------
+asl_alphabet_dataset/
+*.npz
+*.task
+
+# Optional: ignore trained model binaries
+# Uncomment if you do not want to version model files:
+*.h5
+
