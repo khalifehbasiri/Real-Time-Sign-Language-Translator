@@ -141,7 +141,7 @@ function App() {
               <article className="panel info-card">
                 <h3>Built By</h3>
                 <p>
-                  Khalifa Basiri — software engineer focused on practical AI products and
+                  Khalifeh Basiri - software engineer focused on practical AI products and
                   human-centered interfaces.
                 </p>
                 <a href="https://kbasiri.com" target="_blank" rel="noreferrer">

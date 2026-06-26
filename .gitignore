@@ -46,8 +46,5 @@ Thumbs.db
 asl_alphabet_dataset/
 *.npz
 *.task
-
-# Optional: ignore trained model binaries
-# Uncomment if you do not want to version model files:
 *.h5
 
