@@ -1,6 +1,11 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:5000";
+const PRODUCTION_API_FALLBACK = "https://real-time-sign-language-translator-coc0.onrender.com";
+const API_URL =
+  process.env.REACT_APP_API_URL ||
+  (window.location.hostname === "localhost"
+    ? "http://127.0.0.1:5000"
+    : PRODUCTION_API_FALLBACK);
 
 // Function to send landmarks to the backend
 export const sendLandmarks = async (landmarks) => {
