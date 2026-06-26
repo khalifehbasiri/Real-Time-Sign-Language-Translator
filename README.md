@@ -30,12 +30,12 @@ flowchart LR
     G --> H[Translation Console UI]
 ```
 
-## Model Summary
+<!-- ## Model Summary
 
 - Training source: `asl_alphabet_dataset` (`A-Z`, 3000 images/class)
 - Landmark extraction + normalization pipeline in `sign-language-alphabet/extract_landmarks.py`
 - Training script in `sign-language-alphabet/train_landmark_model.py`
-- Latest run achieved approximately **98.3% test accuracy** on extracted landmark data
+- Latest run achieved approximately **98.3% test accuracy** on extracted landmark data -->
 
 ## Repository Structure
 
