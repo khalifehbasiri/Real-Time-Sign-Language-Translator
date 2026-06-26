@@ -8,17 +8,25 @@ function App() {
   const [confidence, setConfidence] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [translationText, setTranslationText] = useState("");
+  const [apiError, setApiError] = useState("");
 
   const handleTranslationUpdate = (result) => {
     if (!result) return;
 
     if (typeof result === "string") {
+      setApiError("");
       setCurrentPrediction(result);
       setLastUpdated(new Date());
       return;
     }
 
+    if (result.error) {
+      setApiError(result.error);
+      return;
+    }
+
     if (result.prediction) {
+      setApiError("");
       setCurrentPrediction(result.prediction);
       setLastUpdated(new Date());
     }
@@ -46,6 +54,7 @@ function App() {
     setCurrentPrediction("-");
     setConfidence(null);
     setLastUpdated(null);
+    setApiError("");
   };
 
   const confidencePercent = confidence ? Math.round(confidence * 100) : 0;
@@ -191,6 +200,8 @@ function App() {
                     <strong>{lastUpdatedText}</strong>
                   </div>
                 </div>
+
+                {apiError ? <p className="api-error-text">{apiError}</p> : null}
 
                 <div className="confidence-track" aria-hidden="true">
                   <span className="confidence-fill" style={{ width: `${confidencePercent}%` }} />

@@ -9,7 +9,8 @@ function HandTracking({ onTranslationUpdate }) {
   const streamRef = useRef(null);
   const frameRequestRef = useRef(null);
   const lastPredictionTimeRef = useRef(0);
-  const PREDICTION_INTERVAL_MS = 250;
+  const predictionInFlightRef = useRef(false);
+  const PREDICTION_INTERVAL_MS = 800;
 
   useEffect(() => {
     let cancelled = false;
@@ -135,13 +136,27 @@ function HandTracking({ onTranslationUpdate }) {
 
 
   const getPrediction = async (landmarksArray) => {
+    if (predictionInFlightRef.current) {
+      return;
+    }
+
+    predictionInFlightRef.current = true;
     try {
       const result = await sendLandmarks(landmarksArray); // Use the API service
       if (result?.prediction) {
         onTranslationUpdate(result); // Update the parent component with prediction + confidence
+      } else if (result?.error) {
+        onTranslationUpdate(result);
       }
     } catch (error) {
       console.error("Error during prediction:", error);
+      onTranslationUpdate({
+        prediction: null,
+        confidence: null,
+        error: "Prediction request failed.",
+      });
+    } finally {
+      predictionInFlightRef.current = false;
     }
   };
   

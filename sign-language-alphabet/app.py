@@ -43,11 +43,22 @@ def normalize_landmarks(landmarks):
 def load_model_if_present():
     if not os.path.exists(MODEL_PATH):
         return None
-    return tf.keras.models.load_model(MODEL_PATH)
+    return tf.keras.models.load_model(MODEL_PATH, compile=False)
+
+
+def warmup_model_if_ready(loaded_model):
+    """
+    Run one tiny forward pass so first real request is faster.
+    """
+    if loaded_model is None:
+        return
+    dummy_input = np.zeros((1, EXPECTED_KEYPOINTS), dtype=np.float32)
+    loaded_model(dummy_input, training=False)
 
 
 model = load_model_if_present()
 label_map = load_label_map(LABEL_MAP_PATH) if os.path.exists(LABEL_MAP_PATH) else {}
+warmup_model_if_ready(model)
 
 
 @app.route("/predict", methods=["POST"])
@@ -87,7 +98,7 @@ def predict():
     except (ValueError, TypeError):
         return jsonify({"error": "Keypoints must be numeric values."}), 400
 
-    preds = model.predict(features, verbose=0)[0]
+    preds = model(features, training=False).numpy()[0]
     pred_idx = int(np.argmax(preds))
     confidence = float(preds[pred_idx])
     prediction = label_map.get(pred_idx, str(pred_idx))
