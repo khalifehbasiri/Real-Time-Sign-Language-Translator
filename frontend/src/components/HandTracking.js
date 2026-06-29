@@ -181,6 +181,17 @@ function HandTracking({ onTranslationUpdate }) {
   const drawResults = (results) => {
     const canvasElement = canvasRef.current;
     const canvasCtx = canvasElement.getContext("2d");
+
+    // Match the canvas resolution to the actual camera frame so the image keeps
+    // its true aspect ratio on any device (phones often deliver portrait/16:9
+    // instead of the requested 4:3). CSS scales it responsively from here.
+    const frameWidth = results.image?.width || canvasElement.width;
+    const frameHeight = results.image?.height || canvasElement.height;
+    if (canvasElement.width !== frameWidth || canvasElement.height !== frameHeight) {
+      canvasElement.width = frameWidth;
+      canvasElement.height = frameHeight;
+    }
+
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
