@@ -1,4 +1,4 @@
-tensorflow-cpu
+ai-edge-litert
 numpy
 flask
 flask-cors

@@ -15,9 +15,12 @@ os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
 MODEL_PATH = "landmark_model.h5"
+TFLITE_MODEL_PATH = "landmark_model.tflite"
 LABEL_MAP_PATH = "label_map.json"
 EXPECTED_KEYPOINTS = 63  # 21 landmarks * (x, y, z)
-model = None
+interpreter = None
+input_details = None
+output_details = None
 
 
 def get_allowed_origins():
@@ -66,39 +69,80 @@ def normalize_landmarks(landmarks):
     return normalized.reshape(1, EXPECTED_KEYPOINTS)
 
 
-def load_model_if_present():
-    if not os.path.exists(MODEL_PATH):
+def get_tflite_interpreter_class():
+    try:
+        from ai_edge_litert.interpreter import Interpreter
+
+        return Interpreter
+    except ImportError:
+        pass
+
+    try:
+        from tflite_runtime.interpreter import Interpreter
+
+        return Interpreter
+    except ImportError:
+        pass
+
+    try:
+        import tensorflow as tf
+
+        return tf.lite.Interpreter
+    except ImportError as error:
+        raise RuntimeError(
+            "No TFLite runtime is installed. Install ai-edge-litert in production "
+            "or tensorflow locally for development."
+        ) from error
+
+
+def load_interpreter_if_present():
+    if not os.path.exists(TFLITE_MODEL_PATH):
         return None
-    import tensorflow as tf
 
-    return tf.keras.models.load_model(MODEL_PATH, compile=False)
+    Interpreter = get_tflite_interpreter_class()
+    loaded_interpreter = Interpreter(model_path=TFLITE_MODEL_PATH)
+    loaded_interpreter.allocate_tensors()
+    return loaded_interpreter
 
 
-def get_model():
-    global model
+def get_interpreter():
+    global interpreter, input_details, output_details
 
-    if model is None:
+    if interpreter is None:
         started_at = time.perf_counter()
-        print("Loading TensorFlow model...", flush=True)
-        model = load_model_if_present()
-        print(f"Model load finished in {time.perf_counter() - started_at:.2f}s", flush=True)
+        print("Loading TFLite model...", flush=True)
+        interpreter = load_interpreter_if_present()
+        if interpreter is not None:
+            input_details = interpreter.get_input_details()
+            output_details = interpreter.get_output_details()
+        print(f"TFLite model load finished in {time.perf_counter() - started_at:.2f}s", flush=True)
 
-    return model
+    return interpreter
 
 
-def warmup_model_if_ready(loaded_model):
+def warmup_model_if_ready(loaded_interpreter):
     """
     Run one tiny forward pass so first real request is faster.
     """
-    if loaded_model is None:
+    if loaded_interpreter is None:
         return
     dummy_input = np.zeros((1, EXPECTED_KEYPOINTS), dtype=np.float32)
-    loaded_model(dummy_input, training=False)
+    run_tflite_inference(dummy_input)
+
+
+def run_tflite_inference(features):
+    input_index = input_details[0]["index"]
+    output_index = output_details[0]["index"]
+    input_dtype = input_details[0]["dtype"]
+
+    interpreter.set_tensor(input_index, features.astype(input_dtype))
+    interpreter.invoke()
+    return interpreter.get_tensor(output_index)[0]
 
 
 label_map = load_label_map(LABEL_MAP_PATH) if os.path.exists(LABEL_MAP_PATH) else {}
 if os.getenv("ENABLE_MODEL_WARMUP", "false").strip().lower() == "true":
-    warmup_model_if_ready(get_model())
+    warmup_model_if_ready(get_interpreter())
 
 
 @app.route("/predict", methods=["POST"])
@@ -107,14 +151,14 @@ def predict():
     Accepts JSON payload:
       { "keypoints": [x1, y1, z1, ..., x21, y21, z21] }
     """
-    loaded_model = get_model()
+    loaded_interpreter = get_interpreter()
 
-    if loaded_model is None:
+    if loaded_interpreter is None:
         return jsonify(
             {
                 "error": (
-                    "landmark_model.h5 not found. Train the landmark model first "
-                    "using train_landmark_model.py."
+                    "landmark_model.tflite not found. Convert landmark_model.h5 first "
+                    "using convert_to_tflite.py."
                 )
             }
         ), 503
@@ -141,7 +185,7 @@ def predict():
         return jsonify({"error": "Keypoints must be numeric values."}), 400
 
     started_at = time.perf_counter()
-    preds = loaded_model(features, training=False).numpy()[0]
+    preds = run_tflite_inference(features)
     pred_idx = int(np.argmax(preds))
     confidence = float(preds[pred_idx])
     prediction = label_map.get(pred_idx, str(pred_idx))
