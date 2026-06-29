@@ -11,6 +11,10 @@ function App() {
   const [translationText, setTranslationText] = useState("");
   const [apiError, setApiError] = useState("");
 
+  // Predictions below this confidence are treated as uncertain: we surface the
+  // confidence bar but withhold the letter so weak guesses can't be added.
+  const CONFIDENCE_THRESHOLD = 0.7;
+
   const handleTranslationUpdate = (result) => {
     if (!result) return;
 
@@ -28,7 +32,9 @@ function App() {
 
     if (result.prediction) {
       setApiError("");
-      setCurrentPrediction(result.prediction);
+      const isConfident =
+        typeof result.confidence !== "number" || result.confidence >= CONFIDENCE_THRESHOLD;
+      setCurrentPrediction(isConfident ? result.prediction : "-");
       setLastUpdated(new Date());
     }
 
@@ -64,6 +70,7 @@ function App() {
   };
 
   const confidencePercent = confidence ? Math.round(confidence * 100) : 0;
+  const isLowConfidence = confidence !== null && confidence < CONFIDENCE_THRESHOLD;
   const lastUpdatedText = lastUpdated ? lastUpdated.toLocaleTimeString() : "Waiting for input";
   const livePreviewText = translationText || (currentPrediction !== "-" ? currentPrediction : "");
   const normalizedApiError = apiError.toLowerCase();
@@ -301,6 +308,12 @@ function App() {
                 <div className="confidence-track" aria-hidden="true">
                   <span className="confidence-fill" style={{ width: `${confidencePercent}%` }} />
                 </div>
+
+                {isLowConfidence && !isModelWarming && !apiError ? (
+                  <p className="low-confidence-text">
+                    Low confidence — hold the sign steady and keep your hand centered for a clearer read.
+                  </p>
+                ) : null}
 
                 <textarea
                   className="translation-text"

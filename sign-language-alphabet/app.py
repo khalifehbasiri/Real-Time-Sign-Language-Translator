@@ -182,22 +182,28 @@ def predict():
     Accepts JSON payload:
       { "keypoints": [x1, y1, z1, ..., x21, y21, z21] }
     """
-    loaded_interpreter, is_loading, load_error = get_interpreter_status()
+    loaded_interpreter, _, _ = get_interpreter_status()
 
     if loaded_interpreter is None:
+        # Trigger background loading first, then re-read status so the very first
+        # request doesn't report a stale/misleading state (loading starts as False).
         ensure_interpreter_loading()
+        _, is_loading, load_error = get_interpreter_status()
+
         if load_error:
             return jsonify({"error": f"Model load failed: {load_error}"}), 503
-        if is_loading:
-            return jsonify({"error": "Model is warming up. Please try again in a few seconds."}), 503
-        return jsonify(
-            {
-                "error": (
-                    "landmark_model.tflite not found. Convert landmark_model.h5 first "
-                    "using convert_to_tflite.py."
-                )
-            }
-        ), 503
+        # Only report "not found" when the model file genuinely doesn't exist.
+        if not os.path.exists(TFLITE_MODEL_PATH):
+            return jsonify(
+                {
+                    "error": (
+                        "landmark_model.tflite not found. Convert landmark_model.h5 first "
+                        "using convert_to_tflite.py."
+                    )
+                }
+            ), 503
+        # File exists but is still loading / warming up on the server.
+        return jsonify({"error": "Model is warming up. Please try again in a few seconds."}), 503
 
     payload = request.get_json(silent=True) or {}
     keypoints = payload.get("keypoints")

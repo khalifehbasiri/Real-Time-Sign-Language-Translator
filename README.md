@@ -124,6 +124,22 @@ Response:
 }
 ```
 
+## Known Limitations & Roadmap
+
+This project is an actively evolving demo. Current known limitations:
+
+- **Static alphabet dataset:** The classifier is trained on a static ASL alphabet image dataset, so accuracy varies for visually similar letters (e.g., `M`/`N`/`S`/`T`) and for hand positions, distances, or lighting that differ from the training data.
+- **No motion-based letters:** Signs that require movement (`J`, `Z`) are not supported, since classification uses single-frame landmarks rather than a temporal sequence.
+- **Single-hand, single-frame inference:** One hand is tracked per frame with no temporal smoothing, so predictions can flicker between similar classes.
+- **Confidence gating:** The frontend withholds predictions below a confidence threshold (default `0.70`) to avoid surfacing weak guesses; very ambiguous signs may therefore show `-`.
+
+Planned improvements:
+
+- Mirror-augmented training (negate the x-axis of each normalized sample) so the model is fully hand-agnostic without relying on client-side mirroring.
+- A temporal model (LSTM/GRU or sliding-window) to support dynamic, motion-based signs.
+- Larger and more diverse training data (lighting, skin tone, camera angle) to improve real-world robustness.
+- Per-class confidence thresholds and temporal smoothing to stabilize live predictions.
+
 ## Author
 
 - Khalifeh Basiri  
