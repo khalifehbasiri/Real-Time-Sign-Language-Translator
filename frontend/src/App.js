@@ -3,7 +3,8 @@ import './App.css';
 import HandTracking from './components/HandTracking';
 
 function App() {
-  const [currentView, setCurrentView] = useState("translator");
+  const [currentView, setCurrentView] = useState("home");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [currentPrediction, setCurrentPrediction] = useState("-");
   const [confidence, setConfidence] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -57,6 +58,11 @@ function App() {
     setApiError("");
   };
 
+  const goTo = (view) => {
+    setCurrentView(view);
+    setMenuOpen(false);
+  };
+
   const confidencePercent = confidence ? Math.round(confidence * 100) : 0;
   const lastUpdatedText = lastUpdated ? lastUpdated.toLocaleTimeString() : "Waiting for input";
   const livePreviewText = translationText || (currentPrediction !== "-" ? currentPrediction : "");
@@ -65,119 +71,199 @@ function App() {
     normalizedApiError.includes("warming up") ||
     normalizedApiError.includes("backend was waking up");
 
+  const marqueeItems = [
+    "Accessibility First",
+    "Real-Time Inference",
+    "MediaPipe Hands",
+    "TensorFlow",
+    "63 Landmark Features",
+    "Browser Based",
+    "Privacy Friendly",
+  ];
+
   return (
-    <div className="App">
+    <div className="app">
+      <div className="bg-glow bg-glow-1" aria-hidden="true" />
+      <div className="bg-glow bg-glow-2" aria-hidden="true" />
+
       <header className="top-bar">
         <div className="top-bar-inner">
-          <div className="brand-group">
-            <span className="brand-mark">SignTranslate AI</span>
-            <a
-              className="portfolio-link"
-              href="https://kbasiri.com"
-              target="_blank"
-              rel="noreferrer"
-            >
-              kbasiri.com
-            </a>
-          </div>
-          <nav className="top-nav">
+          <button className="brand" type="button" onClick={() => goTo("home")}>
+            <span className="brand-dot" aria-hidden="true" />
+            <span className="brand-mark">SignTranslate<span className="brand-accent">AI</span></span>
+          </button>
+
+          <nav className={`top-nav ${menuOpen ? "top-nav-open" : ""}`}>
             <button
-              className={`nav-btn ${currentView === "translator" ? "nav-btn-active" : ""}`}
+              className={`nav-link ${currentView === "home" ? "nav-link-active" : ""}`}
               type="button"
-              onClick={() => setCurrentView("translator")}
-            >
-              Translator
-            </button>
-            <button
-              className={`nav-btn ${currentView === "home" ? "nav-btn-active" : ""}`}
-              type="button"
-              onClick={() => setCurrentView("home")}
+              onClick={() => goTo("home")}
             >
               Home
             </button>
+            <button
+              className={`nav-link ${currentView === "translator" ? "nav-link-active" : ""}`}
+              type="button"
+              onClick={() => goTo("translator")}
+            >
+              Translator
+            </button>
+            <a
+              className="nav-link"
+              href="https://kbasiri.com"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMenuOpen(false)}
+            >
+              About
+            </a>
+            <button className="cta-pill nav-cta" type="button" onClick={() => goTo("translator")}>
+              Start Translating
+            </button>
           </nav>
+
+          <button
+            className={`menu-toggle ${menuOpen ? "menu-toggle-open" : ""}`}
+            type="button"
+            aria-label="Toggle menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
       </header>
 
       <main className="page-content">
         {currentView === "home" ? (
           <section className="landing">
-            <section className="hero panel">
-              <p className="app-eyebrow">Inclusive Communication Platform</p>
-              <h1>Translate ASL in real time with confidence-aware AI</h1>
-              <p className="app-subtitle">
-                Built with MediaPipe landmarks and TensorFlow inference to convert hand signs
-                into readable text instantly.
+            <section className="hero">
+              <h1 className="hero-title">
+                Real-time sign language <span className="grad-text">translation</span>, right in your browser
+              </h1>
+              <p className="hero-subtitle">
+                Capture hand signs with your webcam and convert them into readable text using
+                confidence-aware AI predictions. Built on the fastest, most reliable on-device
+                landmark pipeline.
               </p>
+
               <div className="hero-actions">
-                <button className="primary-btn" type="button" onClick={() => setCurrentView("translator")}>
-                  Go to Translator
+                <button className="cta-pill cta-lg" type="button" onClick={() => goTo("translator")}>
+                  Get Started
                 </button>
-                <span className="muted-note">Webcam access required</span>
+              </div>
+
+              <div className="hero-metrics">
+                <div className="metric-block">
+                  <strong>&lt;0.8s</strong>
+                  <span>Avg Inference</span>
+                </div>
+                <div className="metric-block">
+                  <strong>99.9%</strong>
+                  <span>Uptime Goal</span>
+                </div>
+                <div className="metric-block">
+                  <strong>63</strong>
+                  <span>Landmark Points</span>
+                </div>
               </div>
             </section>
 
-            <section className="feature-grid">
-              <article className="panel feature-card">
-                <h3>Low Latency</h3>
-                <p>Optimized 63-point landmark inference for smooth real-time prediction.</p>
-              </article>
-              <article className="panel feature-card">
-                <h3>Confidence Scoring</h3>
-                <p>Each prediction includes confidence so users can trust the output quality.</p>
-              </article>
-              <article className="panel feature-card">
-                <h3>Production-Ready Stack</h3>
-                <p>React frontend, Flask API, TensorFlow model, Docker-ready backend workflow.</p>
-              </article>
+            <div className="marquee" aria-hidden="true">
+              <div className="marquee-track">
+                {[...marqueeItems, ...marqueeItems].map((item, index) => (
+                  <span className="marquee-item" key={`${item}-${index}`}>
+                    {item}
+                    <span className="marquee-dot">✦</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <section className="section">
+              <div className="section-head">
+                <p className="eyebrow">Our Solution</p>
+                <h2>How this app works under the hood</h2>
+                <p className="section-lead">
+                  Each frame processes 21 hand landmarks (x, y, z) and sends a normalized 63-value
+                  vector to a lightweight backend for instant sign classification.
+                </p>
+              </div>
+
+              <div className="feature-grid">
+                <article className="feature-card">
+                  <span className="feature-icon" aria-hidden="true">✋</span>
+                  <h3>Landmark Capture</h3>
+                  <p>MediaPipe Hands tracks one hand and emits 21 3D points each frame, fully in the browser.</p>
+                </article>
+                <article className="feature-card">
+                  <span className="feature-icon" aria-hidden="true">⚙️</span>
+                  <h3>Feature Normalization</h3>
+                  <p>Landmarks are centered at the wrist and scaled by hand size for stable, lighting-tolerant inference.</p>
+                </article>
+                <article className="feature-card">
+                  <span className="feature-icon" aria-hidden="true">⚡</span>
+                  <h3>TensorFlow Inference API</h3>
+                  <p>A Flask service serves a TensorFlow model to predict the sign class and confidence in milliseconds.</p>
+                </article>
+                <article className="feature-card">
+                  <span className="feature-icon" aria-hidden="true">💬</span>
+                  <h3>Live Translation UX</h3>
+                  <p>Predicted letters are assembled into sentences with controls for space, backspace, and reset.</p>
+                </article>
+              </div>
             </section>
 
-            <section className="home-grid">
-              <article className="panel info-card">
-                <h3>How It Works</h3>
-                <ol>
-                  <li>MediaPipe extracts 21 hand landmarks from each frame.</li>
-                  <li>Flask API sends landmarks into the trained TensorFlow model.</li>
-                  <li>Predicted letters are assembled into sentence output live.</li>
-                </ol>
-              </article>
-              <article className="panel info-card">
-                <h3>Tech Stack</h3>
-                <div className="stack-list">
-                  <span>React</span>
-                  <span>MediaPipe</span>
-                  <span>TensorFlow</span>
-                  <span>Flask</span>
-                  <span>Docker</span>
-                  <span>AWS EC2</span>
+            <section className="section">
+              <div className="about-card">
+                <div className="about-copy">
+                  <p className="eyebrow">About the Creator</p>
+                  <h2>Human-centered AI, built for accessibility</h2>
+                  <p>
+                    I'm Khalifeh Basiri, a software engineer building practical AI apps focused on
+                    accessibility and human-centered interfaces. This project combines MediaPipe
+                    hand landmarks with a lightweight inference backend to deliver live sign
+                    translation in the browser.
+                  </p>
+                  <a className="text-link" href="https://kbasiri.com" target="_blank" rel="noreferrer">
+                    Learn more at kbasiri.com →
+                  </a>
                 </div>
-              </article>
-              <article className="panel info-card">
-                <h3>Built By</h3>
-                <p>
-                  Khalifeh Basiri - software engineer focused on practical AI products and
-                  human-centered interfaces.
-                </p>
-                <a href="https://kbasiri.com" target="_blank" rel="noreferrer">
-                  Visit kbasiri.com
-                </a>
-              </article>
+                <div className="logo-strip">
+                  {["React", "MediaPipe", "Flask", "TensorFlow", "Vercel", "Render"].map((tech) => (
+                    <span className="logo-chip" key={tech}>{tech}</span>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="cta-band">
+              <h2>Effortless sign translation, at any scale</h2>
+              <p>Turn hand signs into text—quickly and reliably. No installs, just your webcam.</p>
+              <button className="cta-pill cta-lg" type="button" onClick={() => goTo("translator")}>
+                Launch Translator
+              </button>
             </section>
           </section>
         ) : (
-          <>
-            <header className="app-header app-header-live">
+          <section className="translator">
+            <header className="translator-head">
               <div>
-                <p className="app-eyebrow">Live Session</p>
+                <p className="eyebrow">Live Session</p>
                 <h1>Sign Language Translator</h1>
               </div>
+              <span className="status-badge">
+                <span className="status-dot" aria-hidden="true" />
+                Tracking Active
+              </span>
             </header>
 
             <div className="main-content">
               <section className="panel camera-box">
                 <div className="panel-title-row">
                   <h2>Live Camera Feed</h2>
-                  <span className="status-badge">Tracking Active</span>
                 </div>
                 <HandTracking onTranslationUpdate={handleTranslationUpdate} />
               </section>
@@ -185,7 +271,7 @@ function App() {
               <section className="panel translation-box">
                 <div className="panel-title-row">
                   <h2>Translation Console</h2>
-                  <button className="clear-btn" type="button" onClick={clearTranslation}>
+                  <button className="ghost-pill ghost-sm" type="button" onClick={clearTranslation}>
                     Reset
                   </button>
                 </div>
@@ -193,7 +279,7 @@ function App() {
                 <div className="metrics-grid">
                   <div className="metric-card">
                     <span className="metric-label">Current Sign</span>
-                    <strong>{currentPrediction}</strong>
+                    <strong className="metric-value-lg">{currentPrediction}</strong>
                   </div>
                   <div className="metric-card">
                     <span className="metric-label">Confidence</span>
@@ -224,13 +310,13 @@ function App() {
                 />
 
                 <div className="action-row">
-                  <button className="primary-btn" type="button" onClick={appendCurrentSign}>
+                  <button className="cta-pill" type="button" onClick={appendCurrentSign}>
                     Add Sign
                   </button>
-                  <button className="secondary-btn" type="button" onClick={appendSpace}>
+                  <button className="ghost-pill" type="button" onClick={appendSpace}>
                     Add Space
                   </button>
-                  <button className="secondary-btn" type="button" onClick={removeLastCharacter}>
+                  <button className="ghost-pill" type="button" onClick={removeLastCharacter}>
                     Backspace
                   </button>
                 </div>
@@ -249,25 +335,27 @@ function App() {
               <article className="panel info-card">
                 <h3>Project Links</h3>
                 <p>Portfolio and project updates:</p>
-                <a href="https://kbasiri.com" target="_blank" rel="noreferrer">
-                  https://kbasiri.com
+                <a className="text-link" href="https://kbasiri.com" target="_blank" rel="noreferrer">
+                  https://kbasiri.com →
                 </a>
               </article>
             </section>
-          </>
+          </section>
         )}
       </main>
 
       <footer className="bottom-bar">
         <div className="bottom-bar-inner">
-          <span>Real-Time Sign Language Translator</span>
-          <span className="footer-links">
-            <span>MediaPipe + TensorFlow + React + Flask</span>
-            <a href="https://kbasiri.com" target="_blank" rel="noreferrer">
-              kbasiri.com
-            </a>
-          </span>
+          <div className="footer-brand">
+            <span className="brand-dot" aria-hidden="true" />
+            <span className="brand-mark">SignTranslate<span className="brand-accent">AI</span></span>
+          </div>
+          <span className="footer-tech">MediaPipe + TensorFlow + React + Flask</span>
+          <a className="text-link" href="https://kbasiri.com" target="_blank" rel="noreferrer">
+            kbasiri.com
+          </a>
         </div>
+        <div className="bottom-bar-base">© {new Date().getFullYear()} SignTranslate AI. All rights reserved.</div>
       </footer>
     </div>
   );
