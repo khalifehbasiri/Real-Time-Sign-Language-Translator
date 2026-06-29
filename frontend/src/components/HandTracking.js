@@ -11,6 +11,11 @@ function HandTracking({ onTranslationUpdate }) {
   const lastPredictionTimeRef = useRef(0);
   const predictionInFlightRef = useRef(false);
   const PREDICTION_INTERVAL_MS = 800;
+  // The model was trained on a single hand orientation (the dataset images are
+  // right-handed). A left and right hand are horizontal mirror images, so we
+  // normalize every detected hand to this orientation before predicting.
+  // If predictions are reversed (right hand works, left doesn't), switch to "Left".
+  const MODEL_HANDEDNESS = "Left";
 
   useEffect(() => {
     let cancelled = false;
@@ -119,10 +124,19 @@ function HandTracking({ onTranslationUpdate }) {
     // If a hand is detected, get the 21 landmarks
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const landmarks = results.multiHandLandmarks[0]; // Only first hand
+
+      // Mirror the landmarks horizontally when the detected hand is the opposite
+      // orientation from what the model was trained on. MediaPipe x is in [0, 1],
+      // so a horizontal flip is simply (1 - x). This makes the left and right hand
+      // produce identical geometry for the classifier.
+      const handedness = results.multiHandedness?.[0]?.label;
+      const shouldMirror = Boolean(handedness) && handedness !== MODEL_HANDEDNESS;
+
       // Convert the landmarks (each has x, y, z) into a flat array [x1, y1, z1, x2, y2, z2, ...]
       const flatLandmarks = [];
       landmarks.forEach((lm) => {
-        flatLandmarks.push(lm.x, lm.y, lm.z);
+        const x = shouldMirror ? 1 - lm.x : lm.x;
+        flatLandmarks.push(x, lm.y, lm.z);
       });
 
       // Send landmarks to the backend for sign recognition
