@@ -5,6 +5,7 @@
 ###############################################################
 import json
 import os
+import threading
 import time
 
 import numpy as np
@@ -21,6 +22,9 @@ EXPECTED_KEYPOINTS = 63  # 21 landmarks * (x, y, z)
 interpreter = None
 input_details = None
 output_details = None
+interpreter_lock = threading.Lock()
+interpreter_loading = False
+interpreter_load_error = None
 
 
 def get_allowed_origins():
@@ -105,19 +109,46 @@ def load_interpreter_if_present():
     return loaded_interpreter
 
 
-def get_interpreter():
-    global interpreter, input_details, output_details
+def load_interpreter_worker():
+    global interpreter, input_details, output_details, interpreter_loading, interpreter_load_error
 
-    if interpreter is None:
-        started_at = time.perf_counter()
-        print("Loading TFLite model...", flush=True)
-        interpreter = load_interpreter_if_present()
-        if interpreter is not None:
-            input_details = interpreter.get_input_details()
-            output_details = interpreter.get_output_details()
-        print(f"TFLite model load finished in {time.perf_counter() - started_at:.2f}s", flush=True)
+    started_at = time.perf_counter()
+    print("Loading TFLite model...", flush=True)
+    try:
+        loaded_interpreter = load_interpreter_if_present()
+        with interpreter_lock:
+            interpreter = loaded_interpreter
+            if loaded_interpreter is not None:
+                input_details = loaded_interpreter.get_input_details()
+                output_details = loaded_interpreter.get_output_details()
+            interpreter_load_error = None
+        print(
+            f"TFLite model load finished in {time.perf_counter() - started_at:.2f}s",
+            flush=True,
+        )
+    except Exception as error:  # pylint: disable=broad-except
+        with interpreter_lock:
+            interpreter_load_error = str(error)
+        print(f"TFLite model load failed: {error}", flush=True)
+    finally:
+        with interpreter_lock:
+            interpreter_loading = False
 
-    return interpreter
+
+def ensure_interpreter_loading():
+    global interpreter_loading
+
+    with interpreter_lock:
+        if interpreter is not None or interpreter_loading:
+            return
+        interpreter_loading = True
+
+    threading.Thread(target=load_interpreter_worker, daemon=True).start()
+
+
+def get_interpreter_status():
+    with interpreter_lock:
+        return interpreter, interpreter_loading, interpreter_load_error
 
 
 def warmup_model_if_ready(loaded_interpreter):
@@ -142,7 +173,7 @@ def run_tflite_inference(features):
 
 label_map = load_label_map(LABEL_MAP_PATH) if os.path.exists(LABEL_MAP_PATH) else {}
 if os.getenv("ENABLE_MODEL_WARMUP", "false").strip().lower() == "true":
-    warmup_model_if_ready(get_interpreter())
+    ensure_interpreter_loading()
 
 
 @app.route("/predict", methods=["POST"])
@@ -151,9 +182,14 @@ def predict():
     Accepts JSON payload:
       { "keypoints": [x1, y1, z1, ..., x21, y21, z21] }
     """
-    loaded_interpreter = get_interpreter()
+    loaded_interpreter, is_loading, load_error = get_interpreter_status()
 
     if loaded_interpreter is None:
+        ensure_interpreter_loading()
+        if load_error:
+            return jsonify({"error": f"Model load failed: {load_error}"}), 503
+        if is_loading:
+            return jsonify({"error": "Model is warming up. Please try again in a few seconds."}), 503
         return jsonify(
             {
                 "error": (
@@ -197,6 +233,11 @@ def predict():
 @app.route("/", methods=["GET"])
 def home():
     return "Sign language landmark prediction API is running."
+
+
+@app.route("/healthz", methods=["GET"])
+def healthz():
+    return jsonify({"status": "ok"}), 200
 
 
 if __name__ == "__main__":

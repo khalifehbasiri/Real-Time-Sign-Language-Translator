@@ -60,6 +60,10 @@ function App() {
   const confidencePercent = confidence ? Math.round(confidence * 100) : 0;
   const lastUpdatedText = lastUpdated ? lastUpdated.toLocaleTimeString() : "Waiting for input";
   const livePreviewText = translationText || (currentPrediction !== "-" ? currentPrediction : "");
+  const normalizedApiError = apiError.toLowerCase();
+  const isModelWarming =
+    normalizedApiError.includes("warming up") ||
+    normalizedApiError.includes("backend was waking up");
 
   return (
     <div className="App">
@@ -201,7 +205,12 @@ function App() {
                   </div>
                 </div>
 
-                {apiError ? <p className="api-error-text">{apiError}</p> : null}
+                {isModelWarming ? (
+                  <p className="api-warmup-text">
+                    Model is loading on the server. First prediction may take up to a minute.
+                  </p>
+                ) : null}
+                {apiError && !isModelWarming ? <p className="api-error-text">{apiError}</p> : null}
 
                 <div className="confidence-track" aria-hidden="true">
                   <span className="confidence-fill" style={{ width: `${confidencePercent}%` }} />

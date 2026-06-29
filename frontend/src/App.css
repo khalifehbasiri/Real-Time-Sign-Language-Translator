@@ -332,6 +332,12 @@
   font-size: 0.9rem;
 }
 
+.api-warmup-text {
+  margin: 0 0 0.8rem;
+  color: #ffd28a;
+  font-size: 0.9rem;
+}
+
 .confidence-track {
   width: 100%;
   height: 8px;
